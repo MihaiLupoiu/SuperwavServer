@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
                 # client disconnected, so remove from socket list
                 except:
-                    broadcast_data(sock, "Client (%s, %s) is offline" % addr)
+                    #broadcast_data(sock, "Client (%s, %s) is offline" % addr)
                     print "Client (%s, %s) is offline" % addr
                     sock.close()
                     CONNECTION_LIST.remove(sock)
