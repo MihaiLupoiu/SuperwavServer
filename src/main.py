@@ -19,6 +19,10 @@ if __name__ == "__main__":
 
             startServerConnection(PORT)
     except:
-        print("Wrong use of the program! For help use -h option.\n")
+        if len(sys.argv) < 2:
+            print("Wrong use of the program! For help use -h option.\n")
+        else:
+            print "Unexpected error:", sys.exc_info()[0]
+            raise
         exit(-1)
 
