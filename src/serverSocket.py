@@ -78,13 +78,16 @@ def startServerConnection(PORT):
     searchBool = True
     playingBool = False
 
-    while True:
+    exitToken = False
+    run = True
+
+    while run:
         # Wait for at least one of the sockets to be ready for processing print >>sys.stderr, '\nwaiting for the next event'
         timeout = 1
         readable, writable, exceptional = select.select(inputs, outputs, inputs, timeout)
 
         if not (readable or writable or exceptional):
-            print >>sys.stderr, '  Timed out, do some other work here'
+            #print >>sys.stderr, '  Timed out, do some other work here'
             char = get_char_keyboard_nonblock()
             if char != None:
                 print char
@@ -112,9 +115,9 @@ def startServerConnection(PORT):
 
                 if char == 'e':
                     notifyClients(inputs[1:], 0, -1, message_queues,outputs)
-                    break
+                    exitToken = True
             continue
-
+        print "HOLA...\n"
         if searchBool == True:
             # Handle inputs
             for s in readable:
@@ -165,6 +168,8 @@ def startServerConnection(PORT):
                 # No messages waiting so stop checking for writability.
                 print >>sys.stderr, 'Output queue for', s.getpeername(), 'is empty'
                 outputs.remove(s)
+                if exitToken:
+                    run = False
             else:
                 print >>sys.stderr, 'Sending "%s" to %s' % (next_msg, s.getpeername())
                 s.send(next_msg)
