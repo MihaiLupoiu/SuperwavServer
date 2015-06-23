@@ -3,15 +3,23 @@ __author__ = 'myhay'
 import ConfigParser
 
 class ConfigFile:
-    def __init__(self,time_to_start,clients_number,sound_folder,number_sounds):
+    def __init__(self, time_to_start, clients_number, sound_folder, number_sounds):
         self.time_to_start = time_to_start
         self.clients_number = clients_number
         self.sound_folder = sound_folder
         self.number_sounds = number_sounds
         self.Sound_List_Pos = []
+        self.clientPos = ()
+        self.inicialSongPos = ()
 
-    def add_sound(self,filename,posX,posY):
-        self.Sound_List_Pos.append( (filename,(posX,posY)))
+    def add_sound(self, filename, posx, posy):
+        self.Sound_List_Pos.append( (filename,(posx,posy)))
+
+    def set_client_pos(self, posx, posy):
+        self.clientPos = (posx, posy)
+
+    def set_sound_inicial_pos(self, posx, posy):
+        self.inicialSongPos = (posx, posy)
 
 
 
@@ -40,6 +48,14 @@ def createConfigFile(configFileName = "../config/example.cfg"):
     config.set('Sound_List', 'file_name3', "001_bajo.wav")
     config.set('Sound_List', 'file_name4', "001_bateriabuena.wav")
 
+    config.add_section('ClientPos')
+    config.set('ClientPos', 'posx', '6')
+    config.set('ClientPos', 'posy', '5')
+
+    config.add_section('SoundPos')
+    config.set('SoundPos', 'posx', '11')
+    config.set('SoundPos', 'posy', '0')
+
     # Writing our configuration file to 'example.cfg'
     with open(configFileName, 'wb') as configfile:
         config.write(configfile)
@@ -58,18 +74,24 @@ def readConfigFile(configFileName = "../config/default.cfg"):
     sound_folder = config.get('Sound', 'sound_folder')
     number_sounds = config.getint('Sound', 'number_sounds')
 
-    configResult = ConfigFile(time_to_start, clients_number, sound_folder, number_sounds)
+    config_result = ConfigFile(time_to_start, clients_number, sound_folder, number_sounds)
 
-    path_items = config.items( "Sound_List" )
+    client_pos = (config.getint('ClientPos', 'posx'), config.getint('ClientPos', 'posy'))
+    config_result.set_client_pos(client_pos[0], client_pos[1])
+
+    sound_pos = (config.getint('SoundPos', 'posx'), config.getint('SoundPos', 'posy'))
+    config_result.set_sound_inicial_pos(sound_pos[0], sound_pos[1])
+
+    path_items = config.items("Sound_List")
     for key, songName in path_items:
-        #do something with path
-        #print key, songName
-        configResult.add_sound(songName,0,11)
+        config_result.add_sound(songName, sound_pos[0], sound_pos[1])
 
-    return configResult
+    return config_result
 
 #createConfigFile("../config/default.cfg")
 
 c = readConfigFile()
-for songPos in c.Sound_List_Pos:
-    print songPos[0], songPos[1][0], songPos[1][1]
+#for songPos in c.Sound_List_Pos:
+#    print songPos[0], songPos[1][0], songPos[1][1]
+
+print c.Sound_List_Pos[0][0]

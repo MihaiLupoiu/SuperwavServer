@@ -4,43 +4,47 @@ import select
 import sys
 import Queue
 import time
+import termios, fcntl, os  # For reading keyboard imput
+from config import readConfigFile  # For reading config file
 
-import termios, fcntl, os
-
-from threading import Thread, Lock
+RECV_BUFFER = 4096  # Advisable to keep it as an exponent of 2
 
 
-RECV_BUFFER = 4096 # Advisable to keep it as an exponent of 2
+def startServerConfiguration(port, clients_number):
+    """
 
-def startServerConfiguration(PORT):
-
+    :rtype : Socket Server, list of inputs, list of outputs, list of messages_queue
+    """
     # Create a TCP/IP socket
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setblocking(0)
 
 
     # Bind the socket to the port
-    server_address = ('localhost', PORT)
-    print >>sys.stderr, 'Starting up on: %s port: %s' % server_address
+    server_address = ('localhost', port)
+    print >> sys.stderr, 'Starting up on: %s port: %s' % server_address
     server.bind(server_address)
 
     # Listen for incoming connections
-    server.listen(30)
+    server.listen(clients_number)
 
     # Sockets from which we expect to read
-    inputs = [ server ]
+    inputs = [server]
 
     # Sockets to which we expect to write
-    outputs = [ ]
+    outputs = []
 
     # Outgoing message queues (socket:Queue)
     message_queues = {}
 
-    print "Server started on port " + str(PORT)
+    return server, inputs, outputs, message_queues
 
-    return (server,inputs,outputs,message_queues)
 
 def get_char_keyboard_nonblock():
+    """
+
+    :rtype : char
+    """
     fd = sys.stdin.fileno()
 
     oldterm = termios.tcgetattr(fd)
@@ -55,102 +59,185 @@ def get_char_keyboard_nonblock():
 
     try:
         c = sys.stdin.read(1)
-    except IOError: pass
+    except IOError:
+        pass
 
     termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
     fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
     return c
 
-def notifyClients(clientsList, timeStamp, idClient,message_queues,outputs):
-    send = "StartTime: "+str(timeStamp)+", IDClient: "+str(idClient)
-    print send
-    for client in clientsList:
-        message_queues[client].put(send)
+
+def notifyClients(clients_list, message_queues, outputs, message_to_send):
+    """
+
+    :rtype : void
+    """
+    for client in clients_list:
+        message_queues[client].put(message_to_send)
         if client not in outputs:
             outputs.append(client)
 
+
+def notifyOneClient(client, message_queues, outputs, message_to_send):
+    """
+
+    :rtype : void
+    """
+    notifyClients([client], message_queues, outputs, message_to_send)
+
+
+def notifyClientsFlag(clients_list, time_stamp, id_client, message_queues, outputs):
+    """
+
+    :rtype : void
+    """
+    message_to_send = "StartTime: " + str(time_stamp) + ", IDClient: " + str(id_client)
+    notifyClients(clients_list, message_queues, outputs, message_to_send)
+
+
+def notifyClientsClientPos(clients_list, time_stamp, client_pos, message_queues, outputs):
+    """
+
+    :rtype : void
+    """
+    message_to_send = "StartTime: " + str(time_stamp) + ", ClientPosX: " + str(client_pos[0]) + ", ClientPosY: " + str(
+        client_pos[1])
+    notifyClients(clients_list, message_queues, outputs, message_to_send)
+
+
+def notifyClientsSongsPos(clients_list, time_stamp, song, song_pos, message_queues, outputs):
+    """
+
+    :rtype : void
+    """
+    message_to_send = "StartTime: " + str(time_stamp) + ", Song: " + str(song) + ", SongPosX: " + str(
+        song_pos[0]) + ", SongPosY: " + str(song_pos[1])
+    notifyClients(clients_list, message_queues, outputs, message_to_send)
+
+
 def startServerConnection(PORT):
+    config_file = readConfigFile()
 
-    numberOfCLients = 1;
-    server,inputs,outputs,message_queues = startServerConfiguration(PORT)
+    number_of_clients = 1
+    server, inputs, outputs, message_queues = startServerConfiguration(PORT, config_file.clients_number)
 
-    searchBool = True
-    playingBool = False
+    search_bool = True
+    playing_bool = False
 
-    exitToken = False
+    exit_token = False
     run = True
 
     while run:
-        # Wait for at least one of the sockets to be ready for processing print >>sys.stderr, '\nwaiting for the next event'
+        # Wait for at least one of the sockets to be ready for
+        # processing print >>sys.stderr, '\nwaiting for the next event'
         timeout = 1
         readable, writable, exceptional = select.select(inputs, outputs, inputs, timeout)
 
         if not (readable or writable or exceptional):
-            #print >>sys.stderr, '  Timed out, do some other work here'
+            # print >>sys.stderr, '  Timed out, do some other work here'
             char = get_char_keyboard_nonblock()
-            if char != None:
-                print char
+            if char is not None:
                 if char == 's':
-                    if playingBool:
-                        print >>sys.stderr, '  Player already running, it will not inicialize.'
+                    if playing_bool:
+                        print >> sys.stderr, '  Player already running, it will not inicialize.'
                     else:
-                        searchBool = False
-                        playingBool = True
-                        print >>sys.stderr, '  Music will start in 10 seconds!'
+                        search_bool = False
+                        playing_bool = True
+                        print >> sys.stdout, '  Music will start in ' + str(config_file.time_to_start) + ' seconds!'
 
-                        timeStamp = int(time.time()*1000)
-                        timeToSend = timeStamp + (10 *1000)
+                        time_stamp = int(time.time() * 1000)
+                        time_to_send = time_stamp + (config_file.time_to_start * 1000)
 
-                        #notifyClients
-                        notifyClients(inputs[1:], timeToSend, 1, message_queues,outputs)
+                        # notifyClients Flag
+                        # notifyClientsFlag(inputs[1:], time_to_send, 1, message_queues, outputs)
+
+                        # notifyClients Client and Songs Pos
+                        #notifyClientsClientPos(inputs[1:], time_to_send, config_file.clientPos, message_queues, outputs)
+
+                        message_to_send = "StartTime: " + str(time_to_send) + ", ClientPosX: " + \
+                                          str(config_file.clientPos[0]) + ", ClientPosY: " + \
+                                          str(config_file.clientPos[1]) + ", Song: " + str(-1) + ", SongPosX: " + \
+                                          str(config_file.inicialSongPos[0]) + ", SongPosY: " + str(
+                            config_file.inicialSongPos[1])
+
+                        notifyClients(inputs[1:], message_queues, outputs, message_to_send)
 
                 if char == 'p':
                     try:
-                        clientToPlay = int(raw_input("Please enter a number: "))
-                    except ValueError:
-                        print "Oops!  That was no valid number.  Try again..."
+                        client_to_play = int(raw_input("Please enter a client number: "))
+                        notifyClientsFlag(inputs[1:], 0, client_to_play, message_queues, outputs)
 
-                    notifyClients(inputs[1:], 0, clientToPlay, message_queues,outputs)
+                    except ValueError:
+                        print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
+
+                if char == 'c':
+                    try:
+                        client_pos_x = int(raw_input("Please enter a client position X: "))
+                        client_pos_y = int(raw_input("Please enter a client position Y: "))
+                        notifyClientsClientPos(inputs[1:], 0, (client_pos_x, client_pos_y), message_queues, outputs)
+
+                    except ValueError:
+                        print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
+
+                if char == 'f':
+                    try:
+                        print >> sys.stdout, '  Select one of the next %s songs to change position: ' % str(
+                            config_file.number_sounds)
+                        cont = 0
+                        for songPos in config_file.Sound_List_Pos:
+                            print >> sys.stdout, cont, songPos[0]  # , songPos[1][0], songPos[1][1]
+                            cont += 1
+
+                        selected_song = int(raw_input("Select: "))
+                        print >> sys.stdout, ' Selected: "%s"' % config_file.Sound_List_Pos[selected_song][0]
+
+                        song_pos_x = int(raw_input("Please enter a position X: "))
+                        song_pos_y = int(raw_input("Please enter a position Y: "))
+                        notifyClientsSongsPos(inputs[1:], 0, selected_song, (song_pos_x, song_pos_y), message_queues,
+                                              outputs)
+
+                    except ValueError:
+                        print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
 
                 if char == 'e':
-                    notifyClients(inputs[1:], 0, -1, message_queues,outputs)
-                    exitToken = True
+                    # notifyClientsFlag(inputs[1:], 0, -1, message_queues, outputs)
+                    notifyClients(inputs[1:], message_queues, outputs, "Exit: True")
+                    exit_token = True
+                    if len(inputs[1:]) == 0:
+                        break
             continue
-        print "HOLA...\n"
-        if searchBool == True:
+
+        if search_bool:
             # Handle inputs
             for s in readable:
                 if s is server:
                     # A "readable" server socket is ready to accept a connection
                     connection, client_address = s.accept()
-                    print >>sys.stderr, 'New connection from', client_address
+                    print >> sys.stdout, 'New connection from', client_address
                     connection.setblocking(0)
                     inputs.append(connection)
 
                     # Give the connection a queue for data we want to send
                     message_queues[connection] = Queue.Queue()
 
-                    message_queues[connection].put(str(numberOfCLients))
-                    if connection not in outputs:
-                        outputs.append(connection)
-
-                    numberOfCLients += 1
+                    notifyOneClient(connection, message_queues, outputs, str(number_of_clients))
+                    number_of_clients += 1
 
                 else:
                     data = s.recv(1024)
                     if data:
                         # A readable client socket has data
-                        print >>sys.stderr, 'Received "%s" from %s' % (data, s.getpeername())
+                        print >> sys.stdout, 'Received "%s" from %s' % (data, s.getpeername())
 
-                        #Respond client
-#                        message_queues[s].put(data)
-                        # Add output channel for response
-#                        if s not in outputs:
-#                            outputs.append(s)
+                        # Respond client
+                    #                        message_queues[s].put(data)
+                    # Add output channel for response
+                    #                        if s not in outputs:
+                    #                            outputs.append(s)
                     else:
                         # Interpret empty result as closed connection
-                        print >>sys.stderr, 'Closing', client_address, 'after reading no data'
+                        print >> sys.stderr, 'Closing', client_address, 'after reading no data'
                         # Stop listening for input on the connection
                         if s in outputs:
                             outputs.remove(s)
@@ -166,12 +253,12 @@ def startServerConnection(PORT):
                 next_msg = message_queues[s].get_nowait()
             except Queue.Empty:
                 # No messages waiting so stop checking for writability.
-                print >>sys.stderr, 'Output queue for', s.getpeername(), 'is empty'
+                # print >> sys.stderr, 'Output queue for', s.getpeername(), 'is empty'
                 outputs.remove(s)
-                if exitToken:
+                if exit_token:
                     run = False
             else:
-                print >>sys.stderr, 'Sending "%s" to %s' % (next_msg, s.getpeername())
+                print >> sys.stdout, 'Sending "%s" to %s' % (next_msg, s.getpeername())
                 s.send(next_msg)
 
     print "Server is closing."

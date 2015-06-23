@@ -15,7 +15,7 @@ if __name__ == "__main__":
             exit(0)
         else:
             PORT = int(sys.argv[1])
-            print("\n***********************\n Port Number: %d \n***********************\n" + str(PORT))
+            print("\n***********************\n Port Number: %s \n***********************\n" % str(PORT))
 
             startServerConnection(PORT)
     except:
