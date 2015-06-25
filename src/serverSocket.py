@@ -92,7 +92,7 @@ def notifyClientsFlag(clients_list, time_stamp, id_client, message_queues, outpu
 
     :rtype : void
     """
-    message_to_send = "StartTime: " + str(time_stamp) + ", IDClient: " + str(id_client)
+    message_to_send = "StartTime:" + str(time_stamp) + ",IDClient:" + str(id_client)
     notifyClients(clients_list, message_queues, outputs, message_to_send)
 
 
@@ -101,7 +101,7 @@ def notifyClientsClientPos(clients_list, time_stamp, client_pos, message_queues,
 
     :rtype : void
     """
-    message_to_send = "StartTime: " + str(time_stamp) + ", ClientPosX: " + str(client_pos[0]) + ", ClientPosY: " + str(
+    message_to_send = "Action:client,StartTime:" + str(time_stamp) + ",ClientPosX:" + str(client_pos[0]) + ",ClientPosY:" + str(
         client_pos[1])
     notifyClients(clients_list, message_queues, outputs, message_to_send)
 
@@ -111,8 +111,8 @@ def notifyClientsSongsPos(clients_list, time_stamp, song, song_pos, message_queu
 
     :rtype : void
     """
-    message_to_send = "StartTime: " + str(time_stamp) + ", Song: " + str(song) + ", SongPosX: " + str(
-        song_pos[0]) + ", SongPosY: " + str(song_pos[1])
+    message_to_send = "Action:song,StartTime:" + str(time_stamp) + ",Song:" + str(song) + ",SongPosX:" + str(
+        song_pos[0]) + ",SongPosY:" + str(song_pos[1])
     notifyClients(clients_list, message_queues, outputs, message_to_send)
 
 
@@ -128,10 +128,11 @@ def startServerConnection(PORT):
     exit_token = False
     run = True
 
+    timeout = 1
+
     while run:
         # Wait for at least one of the sockets to be ready for
         # processing print >>sys.stderr, '\nwaiting for the next event'
-        timeout = 1
         readable, writable, exceptional = select.select(inputs, outputs, inputs, timeout)
 
         if not (readable or writable or exceptional):
@@ -149,16 +150,10 @@ def startServerConnection(PORT):
                         time_stamp = int(time.time() * 1000)
                         time_to_send = time_stamp + (config_file.time_to_start * 1000)
 
-                        # notifyClients Flag
-                        # notifyClientsFlag(inputs[1:], time_to_send, 1, message_queues, outputs)
-
-                        # notifyClients Client and Songs Pos
-                        #notifyClientsClientPos(inputs[1:], time_to_send, config_file.clientPos, message_queues, outputs)
-
-                        message_to_send = "StartTime: " + str(time_to_send) + ", ClientPosX: " + \
-                                          str(config_file.clientPos[0]) + ", ClientPosY: " + \
-                                          str(config_file.clientPos[1]) + ", Song: " + str(-1) + ", SongPosX: " + \
-                                          str(config_file.inicialSongPos[0]) + ", SongPosY: " + str(
+                        message_to_send = "Action:start,StartTime:" + str(time_to_send) + ",ClientPosX:" + \
+                                          str(config_file.clientPos[0]) + ",ClientPosY:" + \
+                                          str(config_file.clientPos[1]) + ",Song:" + str(-1) + ",SongPosX:" + \
+                                          str(config_file.inicialSongPos[0]) + ",SongPosY:" + str(
                             config_file.inicialSongPos[1])
 
                         notifyClients(inputs[1:], message_queues, outputs, message_to_send)
@@ -202,7 +197,7 @@ def startServerConnection(PORT):
 
                 if char == 'e':
                     # notifyClientsFlag(inputs[1:], 0, -1, message_queues, outputs)
-                    notifyClients(inputs[1:], message_queues, outputs, "Exit: True")
+                    notifyClients(inputs[1:], message_queues, outputs, "Action:exit")
                     exit_token = True
                     if len(inputs[1:]) == 0:
                         break
@@ -221,7 +216,7 @@ def startServerConnection(PORT):
                     # Give the connection a queue for data we want to send
                     message_queues[connection] = Queue.Queue()
 
-                    notifyOneClient(connection, message_queues, outputs, str(number_of_clients))
+                    notifyOneClient(connection, message_queues, outputs, "ID:{0}".format(str(number_of_clients)))
                     number_of_clients += 1
 
                 else:
@@ -231,10 +226,10 @@ def startServerConnection(PORT):
                         print >> sys.stdout, 'Received "%s" from %s' % (data, s.getpeername())
 
                         # Respond client
-                    #                        message_queues[s].put(data)
-                    # Add output channel for response
-                    #                        if s not in outputs:
-                    #                            outputs.append(s)
+                        # message_queues[s].put(data)
+                        # Add output channel for response
+                        # if s not in outputs:
+                        #   outputs.append(s)
                     else:
                         # Interpret empty result as closed connection
                         print >> sys.stderr, 'Closing', client_address, 'after reading no data'

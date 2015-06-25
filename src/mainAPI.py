@@ -1,5 +1,7 @@
 __author__ = 'mihai'
 
+# Threads leer:
+# https://pyzone.wordpress.com/2008/02/05/threads-parte-ii/
 from lib.bottle import run, post, request
 
 @post("/SuperWAV/api")
