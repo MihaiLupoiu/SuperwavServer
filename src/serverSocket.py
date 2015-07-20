@@ -164,6 +164,7 @@ def startServerConnection(PORT):
                         notifyClientsFlag(inputs[1:], 0, client_to_play, message_queues, outputs)
 
                     except ValueError:
+                        server.close()
                         print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
 
                 if char == 'c':
@@ -173,6 +174,7 @@ def startServerConnection(PORT):
                         notifyClientsClientPos(inputs[1:], 0, (client_pos_x, client_pos_y), message_queues, outputs)
 
                     except ValueError:
+                        server.close()
                         print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
 
                 if char == 'f':
@@ -193,6 +195,7 @@ def startServerConnection(PORT):
                                               outputs)
 
                     except ValueError:
+                        server.close()
                         print >> sys.stderr, '  Oops!  That was no valid number.  Try again...'
 
                 if char == 'e':
