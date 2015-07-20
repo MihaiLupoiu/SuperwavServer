@@ -94,4 +94,4 @@ c = readConfigFile()
 #for songPos in c.Sound_List_Pos:
 #    print songPos[0], songPos[1][0], songPos[1][1]
 
-print c.Sound_List_Pos[0][0]
+#print c.Sound_List_Pos[0][0]

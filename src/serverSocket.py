@@ -92,7 +92,7 @@ def notifyClientsFlag(clients_list, time_stamp, id_client, message_queues, outpu
 
     :rtype : void
     """
-    message_to_send = "StartTime:" + str(time_stamp) + ",IDClient:" + str(id_client)
+    message_to_send = "Action:flag,StartTime:" + str(time_stamp) + ",IDClient:" + str(id_client)
     notifyClients(clients_list, message_queues, outputs, message_to_send)
 
 
@@ -216,7 +216,7 @@ def startServerConnection(PORT):
                     # Give the connection a queue for data we want to send
                     message_queues[connection] = Queue.Queue()
 
-                    notifyOneClient(connection, message_queues, outputs, "ID:{0}".format(str(number_of_clients)))
+                    notifyOneClient(connection, message_queues, outputs, "Action:identification,ID:{0}".format(str(number_of_clients)))
                     number_of_clients += 1
 
                 else:
@@ -255,6 +255,5 @@ def startServerConnection(PORT):
             else:
                 print >> sys.stdout, 'Sending "%s" to %s' % (next_msg, s.getpeername())
                 s.send(next_msg)
-
     print "Server is closing."
     server.close()
