@@ -21,7 +21,7 @@ def startServerConfiguration(port, clients_number):
 
 
     # Bind the socket to the port
-    server_address = ('localhost', port)
+    server_address = ('', port)
     print >> sys.stderr, 'Starting up on: %s port: %s' % server_address
     server.bind(server_address)
 

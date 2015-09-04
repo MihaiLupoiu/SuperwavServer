@@ -7,7 +7,7 @@ import time
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Bind the socket to the port
-server_address = ('localhost', 4444)
+server_address = ('', 4444)
 print >> sys.stderr, 'Starting up on: %s port: %s' % server_address
 server.bind(server_address)
 
